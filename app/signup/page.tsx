@@ -20,12 +20,14 @@ export default function SignupPage() {
     setErr('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/signup', { username, name, email, password });
-      setToken(res.data.token);
+      const res = await api<{ token: string }>('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ username, name, email, password }),
+      });
+      setToken(res.token);
       router.push('/welcome');
     } catch (e: any) {
-      const msg = e?.response?.data?.message;
-      setErr(Array.isArray(msg) ? msg.join(', ') : msg || 'Signup failed');
+      setErr(e?.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
