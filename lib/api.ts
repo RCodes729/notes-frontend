@@ -28,16 +28,15 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
   return data as T;
 }
 
-// ADD THESE:
 export function signup(payload: { name: string; email: string; password: string }) {
-  return api<{ user: { id: number; name: string; email: string }; accessToken: string }>('/auth/signup', {
+  return api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/signup', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
 
 export function login(payload: { email: string; password: string }) {
-  return api<{ user: { id: number; name: string; email: string }; accessToken: string }>('/auth/login', {
+  return api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
