@@ -13,18 +13,21 @@ export default function NoteDetailPage() {
   const [msg, setMsg] = useState('');
 
   async function load() {
-    const res = await api.get(`/notes/${id}`);
-    setTitle(res.data.title || '');
-    setContent(res.data.content_text || '');
+    const res = await api<{ title?: string; content_text?: string }>(`/notes/${id}`);
+    setTitle(res.title || '');
+    setContent(res.content_text || '');
   }
 
   async function save() {
-    await api.patch(`/notes/${id}`, { title, content_text: content });
+    await api(`/notes/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title, content_text: content }),
+    });
     setMsg('Saved ✅');
   }
 
   async function del() {
-    await api.delete(`/notes/${id}`);
+    await api(`/notes/${id}`, { method: 'DELETE' });
     router.push('/notes');
   }
 
