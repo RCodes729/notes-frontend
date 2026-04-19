@@ -1,15 +1,22 @@
-'use client';
+export const TOKEN_KEY = 'token';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { isAuthed } from '../lib/auth';
+export function setToken(token: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+}
 
-export default function Home() {
-  const router = useRouter();
+export function getToken() {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
 
-  useEffect(() => {
-    router.replace(isAuthed() ? '/welcome' : '/login');
-  }, [router]);
+export function clearToken() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
 
-  return <div className="p-6">Redirecting...</div>;
+export function isAuthed() {
+  return !!getToken();
 }
