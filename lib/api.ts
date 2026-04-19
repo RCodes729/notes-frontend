@@ -1,24 +1,29 @@
-import axios from 'axios';
-import { clearToken, getToken } from './auth';
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-  headers: { 'Content-Type': 'application/json' },
-});
+function getToken() {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token');
+}
 
-api.interceptors.request.use((config) => {
-  const token = typeof window !== 'undefined' ? getToken() : null;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+export async function api<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getToken();
 
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err?.response?.status === 401 && typeof window !== 'undefined') {
-      clearToken();
-      window.location.href = '/login';
-    }
-    return Promise.reject(err);
-  },
-);
+  const res = await fetch(`${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+    cache: 'no-store',
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const msg = data?.message || data?.error || `Request failed: ${res.status}`;
+    throw new Error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+  }
+
+  return data as T;
+}

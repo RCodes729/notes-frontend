@@ -1,140 +1,119 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AuthGuard from '../../components/AuthGuard';
 import AppShell from '../../components/AppShell';
+import AuthGuard from '../../components/AuthGuard';
 import PageTransition from '../../components/PageTransition';
 import { api } from '../../lib/api';
 
-type Me = {
-  id: string;
-  username: string;
+type Profile = {
+  id: number;
   email: string;
-  name?: string | null;
+  username?: string;
+  name?: string;
 };
 
-const AVATAR_KEY = 'notes_avatar_dataurl';
-
 export default function SettingsPage() {
-  const [me, setMe] = useState<Me | null>(null);
-  const [msg, setMsg] = useState('');
-  const [err, setErr] = useState('');
-
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [error, setError] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [savingPass, setSavingPass] = useState(false);
-
-  const [avatar, setAvatar] = useState<string | null>(null);
+  const [pwMsg, setPwMsg] = useState('');
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get('/auth/me');
-        setMe(res.data);
-      } catch (e: any) {
-        setErr(e?.response?.data?.message || 'Failed to load profile');
-      }
-    })();
+    let mounted = true;
 
-    const saved = localStorage.getItem(AVATAR_KEY);
-    if (saved) setAvatar(saved);
+    async function loadProfile() {
+      setError('');
+      try {
+        const data = await api<Profile>('/users/me', { method: 'GET' });
+        if (mounted) setProfile(data);
+        return;
+      } catch {}
+
+      try {
+        const data = await api<Profile>('/auth/me', { method: 'GET' });
+        if (mounted) setProfile(data);
+      } catch (e: any) {
+        if (mounted) setError(e?.message || 'Failed to load profile');
+      }
+    }
+
+    loadProfile();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  async function changePassword(e: React.FormEvent) {
+  async function updatePassword(e: React.FormEvent) {
     e.preventDefault();
-    setErr('');
-    setMsg('');
-    setSavingPass(true);
+    setPwMsg('');
+
     try {
-      await api.post('/auth/change-password', {
-        currentPassword,
-        newPassword,
+      await api('/users/change-password', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
-      setMsg('Password changed successfully');
+      setPwMsg('Password updated successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      return;
+    } catch {}
+
+    try {
+      await api('/auth/change-password', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      setPwMsg('Password updated successfully');
       setCurrentPassword('');
       setNewPassword('');
     } catch (e: any) {
-      const m = e?.response?.data?.message;
-      setErr(Array.isArray(m) ? m.join(', ') : m || 'Could not change password');
-    } finally {
-      setSavingPass(false);
+      setPwMsg(e?.message || 'Failed to update password');
     }
-  }
-
-  function onAvatarChange(file?: File) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || '');
-      setAvatar(dataUrl);
-      localStorage.setItem(AVATAR_KEY, dataUrl);
-      setMsg('Avatar updated locally');
-    };
-    reader.readAsDataURL(file);
   }
 
   return (
     <AuthGuard>
       <PageTransition>
         <AppShell title="Settings" showBackTo="/welcome">
-          <div className="grid md:grid-cols-2 gap-4">
-            <section className="rounded-2xl border border-white/20 bg-white/10 p-5">
-              <h2 className="text-lg font-semibold mb-3">Profile</h2>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-16 w-16 rounded-full overflow-hidden bg-slate-700">
-                  {avatar ? (
-                    <img src={avatar} alt="avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full grid place-items-center text-xl">👤</div>
-                  )}
-                </div>
-                <label className="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 cursor-pointer">
-                  Upload avatar
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => onAvatarChange(e.target.files?.[0])}
-                  />
-                </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <section className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur p-6">
+              <h2 className="text-4xl font-bold text-white mb-6">Profile</h2>
+              <div className="text-white/90 space-y-1 text-2xl">
+                <p>Username: {profile?.username ?? '-'}</p>
+                <p>Email: {profile?.email ?? '-'}</p>
+                <p>Name: {profile?.name ?? '-'}</p>
               </div>
-              <p className="text-sm text-slate-300">Username: {me?.username || '-'}</p>
-              <p className="text-sm text-slate-300">Email: {me?.email || '-'}</p>
-              <p className="text-sm text-slate-300">Name: {me?.name || '-'}</p>
+              {error && <p className="text-rose-300 mt-6 text-2xl">{error}</p>}
             </section>
 
-            <section className="rounded-2xl border border-white/20 bg-white/10 p-5">
-              <h2 className="text-lg font-semibold mb-3">Change password</h2>
-              <form onSubmit={changePassword} className="space-y-3">
+            <section className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur p-6">
+              <h2 className="text-4xl font-bold text-white mb-6">Change password</h2>
+              <form onSubmit={updatePassword} className="space-y-4">
                 <input
-                  type="password"
+                  className="w-full px-5 py-4 rounded-2xl bg-slate-950/50 border border-white/15 text-white placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 text-2xl"
                   placeholder="Current password"
-                  className="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2"
+                  type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
                 />
                 <input
-                  type="password"
+                  className="w-full px-5 py-4 rounded-2xl bg-slate-950/50 border border-white/15 text-white placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 text-2xl"
                   placeholder="New password"
-                  className="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2"
+                  type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                 />
-                <button
-                  disabled={savingPass}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500"
-                >
-                  {savingPass ? 'Saving...' : 'Update password'}
+                <button className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-2xl">
+                  Update password
                 </button>
               </form>
-              <p className="text-xs text-slate-400 mt-2">Must include uppercase, lowercase, number.</p>
+              {pwMsg && <p className="text-slate-200 mt-4 text-xl">{pwMsg}</p>}
             </section>
           </div>
-
-          {msg && <p className="text-emerald-300 mt-4">{msg}</p>}
-          {err && <p className="text-rose-300 mt-2">{err}</p>}
         </AppShell>
       </PageTransition>
     </AuthGuard>

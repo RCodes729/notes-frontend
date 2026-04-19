@@ -17,6 +17,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     setOk(true);
   }, [router]);
 
-  if (!ok) return <div className="p-6 text-slate-300">Checking session...</div>;
+  if (!ok) return null;
   return <>{children}</>;
 }

@@ -18,7 +18,7 @@ export default function AppShell({
 }) {
   const router = useRouter();
   const [askLogout, setAskLogout] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>(getTheme());
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => getTheme());
 
   function onToggleTheme() {
     const t = toggleTheme();
@@ -33,24 +33,17 @@ export default function AppShell({
   return (
     <main className="min-h-screen p-6 max-w-6xl mx-auto">
       <div className="flex flex-wrap gap-2 items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{title}</h1>
+        <h1 className="text-2xl font-bold text-white">{title}</h1>
         <div className="flex gap-2">
           {showBackTo && (
-            <Link href={showBackTo} className="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">
+            <Link href={showBackTo} className="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white">
               Back
             </Link>
           )}
-          <button
-            onClick={onToggleTheme}
-            className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500"
-            title="Toggle theme"
-          >
-            Theme: {theme}
+          <button onClick={onToggleTheme} className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white">
+            {theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
           </button>
-          <button
-            onClick={() => setAskLogout(true)}
-            className="px-3 py-2 rounded-xl bg-rose-700 hover:bg-rose-600"
-          >
+          <button onClick={() => setAskLogout(true)} className="px-3 py-2 rounded-xl bg-rose-700 hover:bg-rose-600 text-white">
             Logout
           </button>
         </div>
