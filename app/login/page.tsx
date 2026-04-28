@@ -8,7 +8,7 @@ import { setToken } from '../../lib/auth';
 import PageTransition from '../../components/PageTransition';
 
 type LoginResponse = {
-  token: string;
+  accessToken: string;
 };
 
 export default function LoginPage() {
@@ -28,7 +28,7 @@ export default function LoginPage() {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      setToken(res.token);
+      setToken(res.accessToken);
       router.push('/welcome');
     } catch (error: any) {
       setErr(error?.message || 'Login failed');
