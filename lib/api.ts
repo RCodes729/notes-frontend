@@ -28,16 +28,28 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
   return data as T;
 }
 
-export function signup(payload: { name: string; email: string; password: string }) {
-  return api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/signup', {
+export async function signup(payload: { name: string; email: string; password: string }) {
+  const res = await api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/signup', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+
+  if (typeof window !== 'undefined' && res?.accessToken) {
+    localStorage.setItem('token', res.accessToken);
+  }
+
+  return res;
 }
 
-export function login(payload: { email: string; password: string }) {
-  return api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/login', {
+export async function login(payload: { email: string; password: string }) {
+  const res = await api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+
+  if (typeof window !== 'undefined' && res?.accessToken) {
+    localStorage.setItem('token', res.accessToken);
+  }
+
+  return res;
 }
