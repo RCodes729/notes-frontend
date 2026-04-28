@@ -53,3 +53,20 @@ export async function login(payload: { email: string; password: string }) {
 
   return res;
 }
+
+/**
+ * Note Management Helpers
+ */
+
+export async function updateNote(id: string, payload: { title?: string; content_text?: string }) {
+  return api(`/notes/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteNote(id: string) {
+  return api(`/notes/${id}`, {
+    method: 'DELETE',
+  });
+}

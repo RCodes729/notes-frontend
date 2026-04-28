@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AppShell from '../../components/AppShell';
 import AuthGuard from '../../components/AuthGuard';
 import PageTransition from '../../components/PageTransition';
 import { api } from '../../lib/api';
 
 type Note = {
-  id: number;
+  id: string; // Database uses UUID strings
   title: string;
-  content: string;
+  content_text: string; // Changed from 'content' to match Prisma schema
 };
 
 export default function NotesPage() {
@@ -34,9 +35,10 @@ export default function NotesPage() {
   async function createNote(e: React.FormEvent) {
     e.preventDefault();
     try {
+      // Backend expects 'content_text'
       await api('/notes', {
         method: 'POST',
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ title, content_text: content }), 
       });
       setTitle('');
       setContent('');
@@ -46,12 +48,24 @@ export default function NotesPage() {
     }
   }
 
+  // New delete function
+  async function deleteNote(id: string) {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    try {
+      await api(`/notes/${id}`, { method: 'DELETE' });
+      // Remove it from the screen immediately without reloading
+      setNotes(notes.filter(n => n.id !== id));
+    } catch (e: any) {
+      setErr(e?.message || 'Failed to delete note');
+    }
+  }
+
   return (
     <AuthGuard>
       <PageTransition>
         <AppShell title="Notes" showBackTo="/welcome">
           <div className="grid md:grid-cols-2 gap-4">
-            <section className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+            <section className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur h-fit">
               <h2 className="text-xl font-semibold text-white mb-3">Create note</h2>
               <form onSubmit={createNote} className="space-y-3">
                 <input
@@ -79,9 +93,19 @@ export default function NotesPage() {
               <h2 className="text-xl font-semibold text-white mb-3">Your notes</h2>
               <div className="space-y-3">
                 {notes.map((n) => (
-                  <div key={n.id} className="rounded-xl border border-white/15 bg-slate-900/40 p-3">
-                    <h3 className="text-white font-semibold">{n.title}</h3>
-                    <p className="text-slate-200 text-sm mt-1 whitespace-pre-wrap">{n.content}</p>
+                  <div key={n.id} className="rounded-xl border border-white/15 bg-slate-900/40 p-4 flex flex-col">
+                    <h3 className="text-white font-semibold text-lg">{n.title}</h3>
+                    <p className="text-slate-300 text-sm mt-2 whitespace-pre-wrap flex-1">{n.content_text}</p>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-4 mt-4 pt-3 border-t border-white/10 justify-end">
+                      <Link href={`/notes/${n.id}`} className="text-sm text-indigo-400 hover:text-indigo-300 font-medium">
+                        Edit
+                      </Link>
+                      <button onClick={() => deleteNote(n.id)} className="text-sm text-rose-400 hover:text-rose-300 font-medium">
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {!notes.length && <p className="text-slate-300">No notes yet.</p>}
