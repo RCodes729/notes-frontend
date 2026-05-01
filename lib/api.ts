@@ -5,10 +5,6 @@ function getToken() {
   return localStorage.getItem('token');
 }
 
-/**
- * Core API Wrapper
- * Automatically handles Base URL, JSON parsing, and Authorization headers.
- */
 export async function api<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
 
@@ -32,22 +28,12 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
   return data as T;
 }
 
-/**
- * Authentication Helpers
- */
-
 export async function signup(payload: { name: string; email: string; password: string }) {
-  const res = await api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/signup', {
+  // Logic: Create the user, but do NOT save the token to localStorage yet
+  return api<{ user: { id: string; name: string; email: string }; accessToken: string }>('/auth/signup', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-
-  // ✅ Fixed: Ensure we save accessToken to prevent "Unauthorized" on redirect
-  if (typeof window !== 'undefined' && res?.accessToken) {
-    localStorage.setItem('token', res.accessToken);
-  }
-
-  return res;
 }
 
 export async function login(payload: { email: string; password: string }) {
@@ -56,24 +42,11 @@ export async function login(payload: { email: string; password: string }) {
     body: JSON.stringify(payload),
   });
 
-  // ✅ Fixed: Use accessToken to match backend response
   if (typeof window !== 'undefined' && res?.accessToken) {
     localStorage.setItem('token', res.accessToken);
   }
 
   return res;
-}
-
-/**
- * Note Management Helpers
- * Note: These use 'content_text' to match the database schema.
- */
-
-export async function createNote(payload: { title: string; content_text: string }) {
-  return api('/notes', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
 }
 
 export async function updateNote(id: string, payload: { title?: string; content_text?: string }) {

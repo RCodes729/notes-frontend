@@ -1,57 +1,95 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { api } from '../../lib/api';
-import { setToken } from '../../lib/auth';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import PageTransition from '../../components/PageTransition';
+import { signup } from '../../lib/api';
 
 export default function SignupPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [err, setErr] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function onSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErr('');
     setLoading(true);
+    setError('');
+
     try {
-      const res = await api<{ token: string }>('/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({ username, name, email, password }),
-      });
-      setToken(res.token);
-      router.push('/welcome');
-    } catch (e: any) {
-      setErr(e?.message || 'Signup failed');
+      await signup({ name, email, password });
+      // Redirect to login page instead of the notes dashboard
+      router.push('/login');
+    } catch (err: any) {
+      setError(err.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
-      <form onSubmit={onSubmit} className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 space-y-4 shadow-2xl">
-        <h1 className="text-2xl font-bold text-white">Create account</h1>
-        {err && <p className="text-rose-300 text-sm">{err}</p>}
+    <PageTransition>
+      <main className="min-h-screen flex items-center justify-center p-6 bg-slate-950">
+        <div className="w-full max-w-md space-y-8 bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-xl">
+          <div>
+            <h1 className="text-4xl font-bold text-white text-center">Create Account</h1>
+            <p className="mt-2 text-center text-slate-400">Join Notes Pro today</p>
+          </div>
 
-        <input className="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-white" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        <input className="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-white" placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
-        <input type="email" className="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-white" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" className="w-full rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 text-white" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <input
+                type="text"
+                required
+                className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                placeholder="Full Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <input
+                type="email"
+                required
+                className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                required
+                className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
-        <button disabled={loading} className="w-full rounded-xl py-2 bg-emerald-600 hover:bg-emerald-500 text-white">
-          {loading ? 'Creating...' : 'Sign up'}
-        </button>
+            {error && (
+              <div className="text-rose-400 text-sm bg-rose-400/10 p-3 rounded-xl border border-rose-400/20">
+                {error}
+              </div>
+            )}
 
-        <p className="text-sm text-slate-300">
-          Already have an account? <Link className="text-indigo-300 underline" href="/login">Login</Link>
-        </p>
-      </form>
-    </main>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-lg transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? 'Creating account...' : 'Sign Up'}
+            </button>
+          </form>
+
+          <p className="text-center text-slate-400">
+            Already have an account?{' '}
+            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
+              Log in
+            </Link>
+          </p>
+        </div>
+      </main>
+    </PageTransition>
   );
 }
